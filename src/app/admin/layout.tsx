@@ -97,6 +97,16 @@ export default function AdminLayout({
                 >
                   Subscribers
                 </Link>
+                <Link
+                  href="/admin/deployments"
+                  className={`font-pixel text-pixel-xs uppercase transition-colors ${
+                    pathname === "/admin/deployments"
+                      ? "text-pixel-accent-green"
+                      : "text-pixel-text-secondary hover:text-pixel-accent-green"
+                  }`}
+                >
+                  Deployments
+                </Link>
               </nav>
             </div>
 
