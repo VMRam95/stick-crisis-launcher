@@ -114,3 +114,58 @@ export interface AdminSession {
   token: string;
   expiresAt: string;
 }
+
+// =============================================================================
+// DEPLOYMENT TYPES
+// =============================================================================
+
+export type DeploymentPlatform = "mac" | "windows";
+export type DeploymentStatus = "pending" | "in_progress" | "completed" | "failed";
+
+export interface BuildInfo {
+  size: number; // bytes
+  sizeFormatted: string;
+  path?: string;
+  uploadedAt?: string;
+}
+
+export interface Deployment {
+  id: string;
+  version: string;
+  platforms: DeploymentPlatform[];
+  status: DeploymentStatus;
+  build_info: {
+    mac?: BuildInfo;
+    windows?: BuildInfo;
+  };
+  changelog_id?: string;
+  itch_channels: string[];
+  commit_hash?: string;
+  commit_message?: string;
+  deployed_at: string;
+  created_at: string;
+}
+
+export interface CreateDeploymentInput {
+  version: string;
+  platforms: DeploymentPlatform[];
+  status?: DeploymentStatus;
+  build_info?: {
+    mac?: Partial<BuildInfo>;
+    windows?: Partial<BuildInfo>;
+  };
+  changelog_id?: string;
+  itch_channels?: string[];
+  commit_hash?: string;
+  commit_message?: string;
+}
+
+export interface DeploymentStats {
+  totalDeployments: number;
+  latestVersion: string;
+  lastDeployedAt: string;
+  platformCounts: {
+    mac: number;
+    windows: number;
+  };
+}
