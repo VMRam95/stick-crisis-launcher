@@ -21,12 +21,25 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
     const latest = searchParams.get("latest") === "true";
+    const detailed = searchParams.get("detailed") === "true";
+
+    // Determine select query based on detailed flag
+    const selectQuery = detailed
+      ? `
+        *,
+        changelog:changelog_id (
+          id,
+          version,
+          title
+        )
+      `
+      : "*";
 
     if (latest) {
       // Get only the latest deployment
       const { data, error } = await supabaseServer
         .from("deployments")
-        .select("*")
+        .select(selectQuery)
         .order("deployed_at", { ascending: false })
         .limit(1)
         .single();
@@ -45,7 +58,7 @@ export async function GET(request: NextRequest) {
     // Get paginated list
     const { data, error, count } = await supabaseServer
       .from("deployments")
-      .select("*", { count: "exact" })
+      .select(selectQuery, { count: "exact" })
       .order("deployed_at", { ascending: false })
       .range(offset, offset + limit - 1);
 

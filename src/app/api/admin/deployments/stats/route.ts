@@ -45,12 +45,28 @@ export async function GET() {
       }
     }
 
-    // Get recent deployments (last 5)
+    // Get recent deployments (last 10) with changelog info
     const { data: recentDeployments } = await supabaseServer
       .from("deployments")
-      .select("id, version, platforms, status, build_info, deployed_at")
+      .select(`
+        id,
+        version,
+        platforms,
+        status,
+        build_info,
+        deployed_at,
+        commit_hash,
+        commit_message,
+        changelog_id,
+        itch_channels,
+        changelog:changelog_id (
+          id,
+          version,
+          title
+        )
+      `)
       .order("deployed_at", { ascending: false })
-      .limit(5);
+      .limit(10);
 
     return NextResponse.json({
       data: {
