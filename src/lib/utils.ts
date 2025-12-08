@@ -21,6 +21,22 @@ export function formatDate(dateString: string): string {
 }
 
 /**
+ * Format date and time to readable string with full timestamp
+ */
+export function formatDateTime(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
+/**
  * Format date to ISO string (YYYY-MM-DD)
  */
 export function formatDateISO(date: Date): string {

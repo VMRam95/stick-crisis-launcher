@@ -139,6 +139,11 @@ export interface Deployment {
     windows?: BuildInfo;
   };
   changelog_id?: string;
+  changelog?: {
+    id: string;
+    version: string;
+    title: string;
+  };
   itch_channels: string[];
   commit_hash?: string;
   commit_message?: string;
@@ -168,4 +173,79 @@ export interface DeploymentStats {
     mac: number;
     windows: number;
   };
+}
+
+// =============================================================================
+// BUILD STATUS TYPES
+// =============================================================================
+
+export interface PlatformBuildInfo {
+  exists: boolean;
+  path: string;
+  size: number;
+  sizeFormatted: string;
+  fileCount: number;
+  appName?: string; // For mac .app
+  exeName?: string; // For windows .exe
+  lastModified?: string;
+}
+
+export type CommitType = "feat" | "fix" | "update" | "refactor" | "docs" | "chore" | "other";
+export type VersionBump = "major" | "minor" | "patch" | "none";
+
+export interface ParsedCommit {
+  hash: string;
+  type: CommitType;
+  scope?: string;
+  message: string;
+  fullMessage: string;
+}
+
+export interface GeneratedChangelog {
+  features: ParsedCommit[];
+  fixes: ParsedCommit[];
+  improvements: ParsedCommit[];
+  other: ParsedCommit[];
+  totalCommits: number;
+  suggestedBump: VersionBump;
+  suggestedVersion: string;
+  markdownContent: string;
+}
+
+export interface BuildStatus {
+  version: string;
+  buildsPath: string;
+  mac: PlatformBuildInfo | null;
+  windows: PlatformBuildInfo | null;
+  latestChangelog: {
+    id: string;
+    version: string;
+    title: string;
+    is_published: boolean;
+  } | null;
+  suggestedVersion: string;
+  gitTag: string;
+  // Pending changes since last tag (from remote)
+  pendingChanges: GeneratedChangelog | null;
+  hasNewCommits: boolean;
+  // Latest commit hash from origin/main
+  latestCommitHash: string;
+  // Timestamps for visual comparison
+  tagCreatedAt: string | null;
+  latestCommitDate: string | null;
+}
+
+export interface ExecuteDeploymentInput {
+  platforms: DeploymentPlatform[];
+  version?: string;
+  notifySubscribers?: boolean;
+  publishChangelog?: boolean;
+}
+
+export interface DeploymentOutput {
+  success: boolean;
+  output: string;
+  error?: string;
+  deployedVersion?: string;
+  platforms?: DeploymentPlatform[];
 }
