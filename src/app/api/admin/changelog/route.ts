@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthenticated, verifyApiKey } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
-import { sendNewsletterEmail } from "@/lib/email/emailjs";
+import { sendDeploymentEmail } from "@/lib/email/emailjs";
 
 async function isAuthorized(): Promise<boolean> {
   const cookieAuth = await isAdminAuthenticated();
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper function to notify subscribers
+// Helper function to notify subscribers about new deployment
 async function notifySubscribers(version: string, title: string, content: string) {
   try {
     const { data: subscribers, error: fetchError } = await supabaseServer
@@ -116,13 +116,13 @@ async function notifySubscribers(version: string, title: string, content: string
 
     let sent = 0;
     let errors = 0;
-    const subject = `Stick Crisis ${version} - ${title}`;
+    const subject = `🎮 Stick Crisis ${version} Released!`;
 
     for (const subscriber of subscribers) {
       try {
-        await sendNewsletterEmail(
+        await sendDeploymentEmail(
           subscriber.email,
-          subject,
+          version,
           content,
           subscriber.unsubscribe_token
         );
