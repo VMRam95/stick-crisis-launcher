@@ -16,7 +16,6 @@ import type {
   DeploymentPlatform,
   Changelog,
   BuildStatus,
-  GeneratedChangelog,
 } from "@/types";
 
 interface DeploymentStats {

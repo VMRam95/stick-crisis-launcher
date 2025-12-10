@@ -280,7 +280,7 @@ function bumpVersion(version: string, bump: VersionBump): string {
 
   if (!match) return version;
 
-  let [, major, minor, patch, suffix] = match;
+  const [, major, minor, patch, suffix] = match;
   let majorNum = parseInt(major, 10);
   let minorNum = parseInt(minor, 10);
   let patchNum = parseInt(patch, 10);
