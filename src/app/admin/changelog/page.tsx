@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   PixelButton,
   PixelInput,
@@ -9,11 +9,19 @@ import {
   LoadingSpinner,
   Modal,
   ConfirmModal,
+  PlatformIcon,
+  ChangelogContent,
+  PaginationButtons,
   useToast,
 } from "@/components/ui";
 import { formatDate } from "@/lib/utils";
 import { CHANGELOG_CATEGORIES } from "@/lib/constants";
-import type { Changelog } from "@/types";
+import type { Changelog, Deployment, ChangelogCategory } from "@/types";
+
+// Extend Deployment with full changelog data (when using detailed=true)
+type DeploymentWithChangelog = Omit<Deployment, "changelog"> & {
+  changelog?: Changelog | null;
+};
 
 interface ChangelogForm {
   id?: string;
@@ -35,31 +43,34 @@ const emptyForm: ChangelogForm = {
 };
 
 export default function AdminChangelogPage() {
-  const [changelogs, setChangelogs] = useState<Changelog[]>([]);
+  const [deployments, setDeployments] = useState<DeploymentWithChangelog[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [form, setForm] = useState<ChangelogForm>(emptyForm);
+  const [displayLimit, setDisplayLimit] = useState(5);
+  const [totalDeployments, setTotalDeployments] = useState(0);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchChangelogs();
-  }, []);
-
-  async function fetchChangelogs() {
+  const fetchDeployments = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/changelog");
+      const response = await fetch("/api/admin/deployments?detailed=true&limit=50");
       if (!response.ok) throw new Error("Failed to fetch");
       const data = await response.json();
-      setChangelogs(data.data || []);
+      setDeployments(data.data || []);
+      setTotalDeployments(data.total || 0);
     } catch (error) {
-      showToast("Failed to load changelogs", "error");
+      showToast("Failed to load deployments", "error");
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchDeployments();
+  }, [fetchDeployments]);
 
   function openCreate() {
     setForm(emptyForm);
@@ -101,7 +112,7 @@ export default function AdminChangelogPage() {
         "success"
       );
       setModalOpen(false);
-      fetchChangelogs();
+      fetchDeployments();
     } catch (error) {
       showToast("Failed to save changelog", "error");
       console.error(error);
@@ -120,7 +131,7 @@ export default function AdminChangelogPage() {
 
       showToast("Changelog deleted", "success");
       setConfirmDelete(null);
-      fetchChangelogs();
+      fetchDeployments();
     } catch (error) {
       showToast("Failed to delete changelog", "error");
       console.error(error);
@@ -144,7 +155,7 @@ export default function AdminChangelogPage() {
         changelog.is_published ? "Changelog unpublished" : "Changelog published",
         "success"
       );
-      fetchChangelogs();
+      fetchDeployments();
     } catch (error) {
       showToast("Failed to update changelog", "error");
       console.error(error);
@@ -159,75 +170,131 @@ export default function AdminChangelogPage() {
     );
   }
 
+  const displayedDeployments = deployments.slice(0, displayLimit);
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="font-pixel text-pixel-sm text-pixel-text-primary uppercase">
-          Changelog
-        </h1>
+        <div>
+          <h1 className="font-pixel text-pixel-sm text-pixel-text-primary uppercase">
+            Changelog
+          </h1>
+          <p className="font-mono text-xs text-pixel-text-muted mt-1">
+            {totalDeployments} deployments with changelogs
+          </p>
+        </div>
         <PixelButton onClick={openCreate}>+ Add Entry</PixelButton>
       </div>
 
-      {/* Changelog List */}
+      {/* Deployments with Changelogs List */}
       <div className="space-y-4">
-        {changelogs.length === 0 ? (
+        {deployments.length === 0 ? (
           <PixelCard className="text-center">
             <p className="text-pixel-text-muted font-mono">
-              No changelog entries yet.
+              No deployments found.
             </p>
           </PixelCard>
         ) : (
-          changelogs.map((changelog) => (
-            <PixelCard key={changelog.id} variant="outlined">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="font-pixel text-pixel-xs text-pixel-accent-green">
-                      v{changelog.version}
-                    </span>
-                    <PixelBadge category={changelog.category}>
-                      {changelog.category}
-                    </PixelBadge>
-                    {!changelog.is_published && (
-                      <span className="font-mono text-xs text-pixel-accent-yellow">
-                        [Draft]
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-pixel text-pixel-xs text-pixel-text-primary uppercase">
-                    {changelog.title}
-                  </h3>
-                  <p className="font-mono text-pixel-text-muted text-sm mt-1">
-                    {formatDate(changelog.release_date)}
-                  </p>
-                </div>
+          <>
+            {displayedDeployments.map((deployment) => {
+              const changelog = deployment.changelog;
 
-                <div className="flex items-center gap-2">
-                  <PixelButton
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => togglePublish(changelog)}
-                  >
-                    {changelog.is_published ? "Unpublish" : "Publish"}
-                  </PixelButton>
-                  <PixelButton
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => openEdit(changelog)}
-                  >
-                    Edit
-                  </PixelButton>
-                  <PixelButton
-                    size="sm"
-                    variant="danger"
-                    onClick={() => setConfirmDelete(changelog.id)}
-                  >
-                    Delete
-                  </PixelButton>
-                </div>
-              </div>
-            </PixelCard>
-          ))
+              return (
+                <PixelCard key={deployment.id} variant="outlined">
+                  {/* Deployment Header */}
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="flex-1">
+                      {/* Deployment Info Row */}
+                      <div className="flex items-center gap-3 mb-3 flex-wrap">
+                        <span className="font-pixel text-pixel-xs text-pixel-accent-green">
+                          v{deployment.version}
+                        </span>
+
+                        <PixelBadge
+                          category={deployment.status === "completed" ? "Feature" : "Bugfix"}
+                        >
+                          {deployment.status}
+                        </PixelBadge>
+
+                        <span className="flex items-center gap-1">
+                          {deployment.platforms?.map((p) => (
+                            <PlatformIcon key={p} platform={p} />
+                          ))}
+                        </span>
+
+                        <span className="font-mono text-xs text-pixel-text-muted">
+                          {formatDate(deployment.deployed_at)}
+                        </span>
+                      </div>
+
+                      {/* Changelog Content */}
+                      {changelog ? (
+                        <div className="border-l-2 border-pixel-accent-green pl-4 mt-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <PixelBadge category={changelog.category as ChangelogCategory}>
+                              {changelog.category}
+                            </PixelBadge>
+                            {!changelog.is_published && (
+                              <span className="font-mono text-xs text-pixel-accent-yellow">
+                                [Draft]
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="font-pixel text-pixel-xs text-pixel-text-primary uppercase mb-2">
+                            {changelog.title}
+                          </h3>
+
+                          {/* Changelog Content Preview */}
+                          <ChangelogContent content={changelog.content} />
+
+                          {/* Changelog Actions */}
+                          <div className="flex items-center gap-2 mt-4">
+                            <PixelButton
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => togglePublish(changelog)}
+                            >
+                              {changelog.is_published ? "Unpublish" : "Publish"}
+                            </PixelButton>
+                            <PixelButton
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => openEdit(changelog)}
+                            >
+                              Edit
+                            </PixelButton>
+                            <PixelButton
+                              size="sm"
+                              variant="danger"
+                              onClick={() => setConfirmDelete(changelog.id)}
+                            >
+                              Delete
+                            </PixelButton>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="border-l-2 border-pixel-text-muted pl-4 mt-3">
+                          <p className="font-mono text-sm text-pixel-text-muted italic">
+                            No changelog linked to this deployment
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </PixelCard>
+              );
+            })}
+
+            {/* Pagination */}
+            <PaginationButtons
+              totalItems={totalDeployments}
+              displayLimit={displayLimit}
+              defaultLimit={5}
+              onLoadMore={() => setDisplayLimit((prev) => prev + 5)}
+              onShowLess={() => setDisplayLimit(5)}
+            />
+          </>
         )}
       </div>
 

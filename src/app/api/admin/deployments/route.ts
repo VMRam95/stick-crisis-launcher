@@ -30,7 +30,11 @@ export async function GET(request: NextRequest) {
         changelog:changelog_id (
           id,
           version,
-          title
+          title,
+          content,
+          category,
+          release_date,
+          is_published
         )
       `
       : "*";
