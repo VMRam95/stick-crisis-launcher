@@ -8,3 +8,6 @@ export { Toast, type ToastProps } from "./Toast";
 export { ToastProvider, useToast } from "./ToastProvider";
 export { Modal, type ModalProps } from "./Modal";
 export { ConfirmModal, type ConfirmModalProps } from "./ConfirmModal";
+export { PlatformIcon } from "./PlatformIcon";
+export { ChangelogContent } from "./ChangelogContent";
+export { PaginationButtons } from "./PaginationButtons";
