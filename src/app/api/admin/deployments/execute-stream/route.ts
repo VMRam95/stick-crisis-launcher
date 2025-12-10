@@ -4,6 +4,11 @@ import { spawn, execSync } from "child_process";
 import * as path from "path";
 import type { ExecuteDeploymentInput } from "@/types";
 
+// Check if running on Vercel (serverless) or locally
+function isRunningLocally(): boolean {
+  return process.env.VERCEL !== "1";
+}
+
 // Path to the stick-crisis game repository
 const STICK_CRISIS_REPO = path.resolve(process.cwd(), "../stick-crisis");
 
@@ -140,6 +145,20 @@ export async function POST(request: NextRequest) {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Block execution on Vercel - requires local environment
+    if (!isRunningLocally()) {
+      return new Response(
+        JSON.stringify({
+          error: "Deployment execution is only available in local environment",
+          message: "This feature requires access to local build files and butler CLI. Please run deployments from your local development environment.",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     const body: ExecuteDeploymentInput = await request.json();

@@ -13,6 +13,11 @@ import type {
   VersionBump,
 } from "@/types";
 
+// Check if running on Vercel (serverless) or locally
+function isRunningLocally(): boolean {
+  return process.env.VERCEL !== "1";
+}
+
 // Path to the stick-crisis game repository (relative to launcher)
 const STICK_CRISIS_REPO = path.resolve(process.cwd(), "../stick-crisis");
 const BUILDS_PATH = path.join(STICK_CRISIS_REPO, "Builds");
@@ -454,6 +459,35 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Check if running on Vercel - return limited info
+    if (!isRunningLocally()) {
+      // On Vercel, we can only get DB info, not filesystem/git info
+      const supabase = getSupabaseServer();
+      const { data: changelog } = await supabase
+        .from("changelog")
+        .select("id, version, title, is_published")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      return NextResponse.json({
+        isLocal: false,
+        version: changelog?.version || "0.0.0",
+        buildsPath: null,
+        mac: null,
+        windows: null,
+        latestChangelog: changelog || null,
+        suggestedVersion: changelog?.version || "0.0.0",
+        gitTag: null,
+        pendingChanges: null,
+        hasNewCommits: false,
+        latestCommitHash: null,
+        tagCreatedAt: null,
+        latestCommitDate: null,
+        message: "Running on Vercel - build status requires local environment",
+      });
+    }
+
     // Fetch latest from remote before reading
     fetchRemote();
 
@@ -499,7 +533,8 @@ export async function GET() {
     const tagCreatedAt = gitTag ? getTagCreatedAt(gitTag) : null;
     const latestCommitDate = getLatestCommitDate();
 
-    const buildStatus: BuildStatus = {
+    const buildStatus: BuildStatus & { isLocal: boolean } = {
+      isLocal: true,
       version,
       buildsPath: versionBuildPath,
       mac: macBuild,
