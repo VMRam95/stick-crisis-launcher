@@ -1,6 +1,57 @@
 // EmailJS Server-side API integration
 // Uses EmailJS REST API for server-side email sending
 
+// Simple markdown to HTML converter for email content
+function markdownToHtml(markdown: string): string {
+  let html = markdown;
+
+  // Convert headers (## Header -> <h2>Header</h2>)
+  html = html.replace(/^### (.+)$/gm, '<h3 style="color: #00ff41; margin: 16px 0 8px 0;">$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2 style="color: #00ff41; margin: 20px 0 12px 0;">$1</h2>');
+
+  // Convert bold (**text** -> <strong>text</strong>)
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  // Convert bullet points (- item -> <li>item</li>)
+  // First, wrap consecutive list items in <ul>
+  const lines = html.split('\n');
+  const result: string[] = [];
+  let inList = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('- ')) {
+      if (!inList) {
+        result.push('<ul style="margin: 8px 0; padding-left: 20px;">');
+        inList = true;
+      }
+      result.push(`<li style="margin: 4px 0;">${trimmed.substring(2)}</li>`);
+    } else {
+      if (inList) {
+        result.push('</ul>');
+        inList = false;
+      }
+      // Convert empty lines to spacing
+      if (trimmed === '') {
+        result.push('<br>');
+      } else {
+        result.push(`<p style="margin: 8px 0;">${trimmed}</p>`);
+      }
+    }
+  }
+
+  if (inList) {
+    result.push('</ul>');
+  }
+
+  // Clean up multiple <br> tags and empty <p> tags
+  html = result.join('\n')
+    .replace(/<p style="[^"]*"><\/p>/g, '')
+    .replace(/(<br>\s*){2,}/g, '<br>');
+
+  return html;
+}
+
 interface EmailJSResponse {
   status: number;
   text: string;
@@ -109,10 +160,13 @@ export async function sendDeploymentEmail(
     throw new Error("Deployment email template not configured");
   }
 
+  // Convert markdown changelog to HTML for proper email rendering
+  const htmlChangelog = markdownToHtml(changelog);
+
   await sendEmail(templateId, {
     to_email: email,
     subject: `🎮 Stick Crisis ${version} Released!`,
-    message: changelog,
+    message: htmlChangelog,
     version: version,
     download_url: itchUrl,
     changelog_url: `${appUrl}/changelog`,
