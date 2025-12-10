@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PixelCard, PixelBadge, LoadingSpinner } from "@/components/ui";
+import Link from "next/link";
+import {
+  PixelCard,
+  PixelBadge,
+  LoadingSpinner,
+  ChangelogContent,
+  PixelButton,
+} from "@/components/ui";
 import { formatDate } from "@/lib/utils";
 import type { Changelog } from "@/types";
 
@@ -28,6 +35,9 @@ export function ChangelogSection() {
 
     fetchChangelogs();
   }, []);
+
+  // Always show only the latest 3 changelogs
+  const displayedChangelogs = changelogs.slice(0, 3);
 
   return (
     <section id="changelog" className="py-20 bg-pixel-bg-primary">
@@ -64,7 +74,7 @@ export function ChangelogSection() {
             </PixelCard>
           ) : (
             <div className="space-y-6">
-              {changelogs.map((changelog) => (
+              {displayedChangelogs.map((changelog) => (
                 <PixelCard
                   key={changelog.id}
                   variant="outlined"
@@ -90,12 +100,33 @@ export function ChangelogSection() {
                     {changelog.title}
                   </h3>
 
-                  {/* Content */}
-                  <p className="font-mono text-pixel-text-secondary text-sm leading-relaxed">
-                    {changelog.content}
-                  </p>
+                  {/* Content - Rendered as HTML with truncation */}
+                  <ChangelogContent content={changelog.content} truncate={true} maxLines={5} />
+
+                  {/* View Details Link */}
+                  <Link
+                    href={`/changelog/${changelog.id}`}
+                    className="inline-flex items-center gap-2 mt-4 text-xs font-mono text-pixel-accent-cyan hover:text-pixel-accent-green transition-colors duration-200"
+                  >
+                    <span>View full details</span>
+                    <span>→</span>
+                  </Link>
                 </PixelCard>
               ))}
+
+              {/* View All Link */}
+              {changelogs.length > 3 && (
+                <div className="flex justify-center mt-8">
+                  <Link href="/changelog">
+                    <PixelButton variant="secondary" size="md">
+                      <span className="flex items-center gap-2">
+                        View All Changelogs
+                        <span>→</span>
+                      </span>
+                    </PixelButton>
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>
