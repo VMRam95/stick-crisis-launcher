@@ -100,3 +100,65 @@ export function getCategoryBgColor(category: string): string {
   };
   return colors[category] || "bg-pixel-text-secondary/20";
 }
+
+/**
+ * Convert markdown to styled HTML for changelog content
+ * Handles headers (##, ###), bold (**text**), and bullet lists (- item)
+ */
+export function markdownToHtml(markdown: string): string {
+  if (!markdown) return "";
+
+  let html = markdown;
+
+  // Convert headers (## Header -> <h2>Header</h2>)
+  html = html.replace(
+    /^### (.+)$/gm,
+    '<h3 class="text-pixel-accent-yellow font-pixel text-pixel-2xs mt-4 mb-2">$1</h3>'
+  );
+  html = html.replace(
+    /^## (.+)$/gm,
+    '<h2 class="text-pixel-accent-green font-pixel text-pixel-xs mt-3 mb-2">$1</h2>'
+  );
+
+  // Convert bold (**text** -> <strong>text</strong>)
+  html = html.replace(
+    /\*\*([^*]+)\*\*/g,
+    '<strong class="text-pixel-accent-cyan">$1</strong>'
+  );
+
+  // Convert bullet points (- item -> <li>item</li>)
+  const lines = html.split("\n");
+  const result: string[] = [];
+  let inList = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("- ")) {
+      if (!inList) {
+        result.push('<ul class="list-none space-y-1 my-2">');
+        inList = true;
+      }
+      result.push(
+        `<li class="text-pixel-text-primary before:content-['▸'] before:text-pixel-accent-green before:mr-2">${trimmed.substring(2)}</li>`
+      );
+    } else {
+      if (inList) {
+        result.push("</ul>");
+        inList = false;
+      }
+      if (trimmed === "") {
+        result.push('<div class="h-2"></div>');
+      } else if (!trimmed.startsWith("<h")) {
+        result.push(`<p class="text-pixel-text-secondary">${trimmed}</p>`);
+      } else {
+        result.push(trimmed);
+      }
+    }
+  }
+
+  if (inList) {
+    result.push("</ul>");
+  }
+
+  return result.join("\n");
+}
