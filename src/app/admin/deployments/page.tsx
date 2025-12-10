@@ -18,6 +18,12 @@ import type {
   BuildStatus,
 } from "@/types";
 
+// Extended BuildStatus with environment info
+interface BuildStatusWithEnv extends BuildStatus {
+  isLocal?: boolean;
+  message?: string;
+}
+
 interface DeploymentStats {
   totalDeployments: number;
   latestVersion: string;
@@ -61,7 +67,7 @@ export default function AdminDeploymentsPage() {
   const { showToast } = useToast();
 
   // New deployment section state
-  const [buildStatus, setBuildStatus] = useState<BuildStatus | null>(null);
+  const [buildStatus, setBuildStatus] = useState<BuildStatusWithEnv | null>(null);
   const [buildStatusLoading, setBuildStatusLoading] = useState(false);
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<DeploymentPlatform>>(new Set<DeploymentPlatform>(["mac", "windows"]));
   const [notifySubscribers, setNotifySubscribers] = useState(true);
@@ -296,7 +302,32 @@ export default function AdminDeploymentsPage() {
             </PixelButton>
           </div>
 
-          {buildStatusLoading && !buildStatus ? (
+          {/* Show message when running on Vercel */}
+          {buildStatus && buildStatus.isLocal === false ? (
+            <div className="bg-pixel-bg-secondary p-6 rounded border border-pixel-accent-yellow/30">
+              <div className="text-center space-y-4">
+                <div className="text-4xl">🚀</div>
+                <h3 className="font-pixel text-pixel-xs text-pixel-accent-yellow uppercase">
+                  Local Environment Required
+                </h3>
+                <p className="font-mono text-sm text-pixel-text-secondary max-w-md mx-auto">
+                  Deployment execution requires access to local build files and the butler CLI.
+                </p>
+                <div className="bg-pixel-bg-primary p-4 rounded border border-pixel-text-muted/20 max-w-lg mx-auto">
+                  <p className="font-mono text-xs text-pixel-text-muted mb-2">
+                    To deploy, run locally:
+                  </p>
+                  <code className="font-mono text-sm text-pixel-accent-green">
+                    cd stick-crisis && ./distribute_itch.sh
+                  </code>
+                </div>
+                <p className="font-mono text-xs text-pixel-text-muted">
+                  Or access the admin panel from{" "}
+                  <code className="text-pixel-accent-cyan">localhost:3000</code>
+                </p>
+              </div>
+            </div>
+          ) : buildStatusLoading && !buildStatus ? (
             <div className="flex justify-center py-8">
               <LoadingSpinner size="md" />
             </div>
