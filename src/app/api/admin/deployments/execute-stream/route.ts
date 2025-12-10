@@ -13,12 +13,12 @@ function stripAnsiCodes(text: string): string {
   return text.replace(/\x1b\[[0-9;]*m/g, "");
 }
 
-// Create and push a git tag
+// Create and push a git tag (with streaming output)
 function createAndPushTag(
   version: string,
   encoder: TextEncoder,
   controller: ReadableStreamDefaultController
-): { success: boolean; error?: string } {
+): { success: boolean; alreadyExisted: boolean; error?: string } {
   const tagName = version.startsWith("v") ? version : `v${version}`;
 
   try {
@@ -29,10 +29,15 @@ function createAndPushTag(
         encoding: "utf-8",
         stdio: "pipe",
       });
-      // Tag exists
-      return { success: false, error: `Tag ${tagName} already exists` };
+      // Tag exists - return success but mark as already existed (no rollback needed)
+      controller.enqueue(
+        encoder.encode(
+          `data: ${JSON.stringify({ type: "stdout", data: `✓ Tag ${tagName} already exists\n` })}\n\n`
+        )
+      );
+      return { success: true, alreadyExisted: true };
     } catch {
-      // Tag doesn't exist, good to proceed
+      // Tag doesn't exist, need to create
     }
 
     // Fetch latest
@@ -76,11 +81,11 @@ function createAndPushTag(
 
     controller.enqueue(
       encoder.encode(
-        `data: ${JSON.stringify({ type: "stdout", data: `✓ Tag ${tagName} pushed to origin\n` })}\n\n`
+        `data: ${JSON.stringify({ type: "stdout", data: `✓ Tag ${tagName} pushed to origin\n\n` })}\n\n`
       )
     );
 
-    return { success: true };
+    return { success: true, alreadyExisted: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
 
@@ -95,7 +100,34 @@ function createAndPushTag(
       // Ignore cleanup errors
     }
 
-    return { success: false, error: message };
+    return { success: false, alreadyExisted: false, error: message };
+  }
+}
+
+// Delete a git tag (for rollback on deployment failure)
+function deleteTag(version: string): void {
+  const tagName = version.startsWith("v") ? version : `v${version}`;
+
+  try {
+    // Delete local tag
+    execSync(`git tag -d ${tagName}`, {
+      cwd: STICK_CRISIS_REPO,
+      encoding: "utf-8",
+      stdio: "pipe",
+    });
+  } catch {
+    // Ignore - tag might not exist locally
+  }
+
+  try {
+    // Delete remote tag
+    execSync(`git push origin :refs/tags/${tagName}`, {
+      cwd: STICK_CRISIS_REPO,
+      encoding: "utf-8",
+      stdio: "pipe",
+    });
+  } catch {
+    // Ignore - tag might not exist remotely
   }
 }
 
@@ -154,6 +186,42 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       start(controller) {
         let output = "";
+        let tagCreatedByUs = false; // Track if WE created a new tag (for rollback)
+
+        // Send initial event
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ type: "start", message: "Starting deployment..." })}\n\n`
+          )
+        );
+
+        // Create tag FIRST if version provided (so git describe returns new version)
+        if (version) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "stdout", data: "🏷️  Creating release tag before deployment...\n" })}\n\n`
+            )
+          );
+
+          const tagResult = createAndPushTag(version, encoder, controller);
+
+          if (!tagResult.success) {
+            // Tag creation failed - abort deployment
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: "error",
+                  message: `Failed to create tag: ${tagResult.error}`,
+                })}\n\n`
+              )
+            );
+            controller.close();
+            return;
+          }
+
+          // Only rollback if WE created the tag (not if it already existed)
+          tagCreatedByUs = !tagResult.alreadyExisted;
+        }
 
         const child = spawn("bash", [scriptPath, ...args], {
           cwd: STICK_CRISIS_REPO,
@@ -163,13 +231,6 @@ export async function POST(request: NextRequest) {
             HOME: process.env.HOME,
           },
         });
-
-        // Send initial event
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ type: "start", message: "Starting deployment..." })}\n\n`
-          )
-        );
 
         child.stdout.on("data", (data) => {
           const text = data.toString();
@@ -200,31 +261,28 @@ export async function POST(request: NextRequest) {
             deployedVersion = stripAnsiCodes(versionMatch[1]);
           }
 
-          // If deployment successful and version provided, create tag
-          let tagCreated = false;
-          let tagError: string | undefined;
-
-          if (deploySuccess && version) {
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "stdout", data: "\n🏷️  Creating release tag...\n" })}\n\n`
-              )
-            );
-
-            const tagResult = createAndPushTag(version, encoder, controller);
-            tagCreated = tagResult.success;
-            tagError = tagResult.error;
-
-            if (tagCreated) {
+          // Handle deployment result
+          if (deploySuccess) {
+            // Success - tag was already created before script ran
+            if (version) {
               controller.enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({ type: "stdout", data: `\n✅ Release v${version} complete!\n` })}\n\n`
                 )
               );
-            } else {
+            }
+          } else {
+            // Deployment failed - rollback tag if we created it
+            if (tagCreatedByUs && version) {
               controller.enqueue(
                 encoder.encode(
-                  `data: ${JSON.stringify({ type: "stderr", data: `\n⚠️ Tag creation failed: ${tagError}\n` })}\n\n`
+                  `data: ${JSON.stringify({ type: "stderr", data: `\n⚠️ Deployment failed. Rolling back tag v${version}...\n` })}\n\n`
+                )
+              );
+              deleteTag(version);
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "stderr", data: `✓ Tag v${version} rolled back\n` })}\n\n`
                 )
               );
             }
@@ -238,8 +296,8 @@ export async function POST(request: NextRequest) {
                 exitCode: code,
                 deployedVersion: deployedVersion || version,
                 platforms,
-                tagCreated,
-                tagError,
+                tagCreated: deploySuccess && !!version,
+                tagError: undefined,
               })}\n\n`
             )
           );
@@ -247,6 +305,10 @@ export async function POST(request: NextRequest) {
         });
 
         child.on("error", (err) => {
+          // Rollback tag if we created it
+          if (tagCreatedByUs && version) {
+            deleteTag(version);
+          }
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
@@ -262,6 +324,10 @@ export async function POST(request: NextRequest) {
         const timeout = setTimeout(() => {
           if (!child.killed) {
             child.kill("SIGTERM");
+            // Rollback tag if we created it
+            if (tagCreatedByUs && version) {
+              deleteTag(version);
+            }
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
