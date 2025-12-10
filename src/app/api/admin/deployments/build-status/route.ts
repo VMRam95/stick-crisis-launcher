@@ -466,6 +466,7 @@ export async function GET() {
       const { data: changelog } = await supabase
         .from("changelog")
         .select("id, version, title, is_published")
+        .order("release_date", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
@@ -510,6 +511,7 @@ export async function GET() {
     const { data: changelog } = await supabase
       .from("changelog")
       .select("id, version, title, is_published")
+      .order("release_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(1)
       .single();

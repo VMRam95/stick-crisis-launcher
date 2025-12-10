@@ -21,7 +21,8 @@ export async function GET() {
     const { data, error } = await supabaseServer
       .from("changelog")
       .select("*")
-      .order("release_date", { ascending: false });
+      .order("release_date", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching changelogs:", error);
