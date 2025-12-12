@@ -203,16 +203,16 @@ export default function AdminPage() {
         Quick Actions
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link href="/admin/changelog">
+        <Link href="/admin/deployments">
           <PixelCard
             variant="outlined"
             className="hover:border-pixel-accent-green transition-colors cursor-pointer"
           >
             <h3 className="font-pixel text-pixel-xs text-pixel-accent-green uppercase mb-2">
-              Manage Changelog
+              Manage Deployments
             </h3>
             <p className="font-mono text-pixel-text-secondary text-sm">
-              Add, edit, or delete changelog entries
+              Deploy new versions and view history
             </p>
           </PixelCard>
         </Link>
