@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   PixelButton,
   PixelInput,
   PixelCard,
-  LoadingSpinner,
   useToast,
+  useAdminAuth,
 } from "@/components/ui";
 
 interface Stats {
@@ -19,33 +18,18 @@ interface Stats {
 }
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const { isAuthenticated, login } = useAdminAuth();
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const { showToast } = useToast();
-  const router = useRouter();
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchStats();
     }
   }, [isAuthenticated]);
-
-  async function checkAuth() {
-    try {
-      const response = await fetch("/api/admin/auth");
-      const data = await response.json();
-      setIsAuthenticated(data.authenticated);
-    } catch {
-      setIsAuthenticated(false);
-    }
-  }
 
   async function fetchStats() {
     setStatsLoading(true);
@@ -80,8 +64,7 @@ export default function AdminPage() {
       }
 
       showToast("Login successful", "success");
-      setIsAuthenticated(true);
-      router.refresh();
+      login();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Login failed", "error");
     } finally {
@@ -89,13 +72,9 @@ export default function AdminPage() {
     }
   }
 
-  // Loading state
+  // Loading state - handled by layout
   if (isAuthenticated === null) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return null;
   }
 
   // Login form

@@ -12,3 +12,4 @@ export { PlatformIcon } from "./PlatformIcon";
 export { ChangelogContent } from "./ChangelogContent";
 export { PaginationButtons } from "./PaginationButtons";
 export { BackButton } from "./BackButton";
+export { AdminAuthProvider, useAdminAuth } from "./AdminAuthProvider";

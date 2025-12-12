@@ -1,38 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { PixelButton, LoadingSpinner } from "@/components/ui";
+import { usePathname } from "next/navigation";
+import {
+  PixelButton,
+  LoadingSpinner,
+  AdminAuthProvider,
+  useAdminAuth,
+} from "@/components/ui";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const router = useRouter();
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, logout } = useAdminAuth();
   const pathname = usePathname();
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  async function checkAuth() {
-    try {
-      const response = await fetch("/api/admin/auth");
-      const data = await response.json();
-      setIsAuthenticated(data.authenticated);
-    } catch {
-      setIsAuthenticated(false);
-    }
-  }
 
   async function handleLogout() {
     try {
       await fetch("/api/admin/auth", { method: "DELETE" });
-      setIsAuthenticated(false);
-      router.push("/admin");
+      logout();
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -101,7 +85,10 @@ export default function AdminLayout({
             </div>
 
             <div className="flex items-center gap-4">
-              <Link href="/" className="font-mono text-sm text-pixel-text-muted hover:text-pixel-text-secondary">
+              <Link
+                href="/"
+                className="font-mono text-sm text-pixel-text-muted hover:text-pixel-text-secondary"
+              >
                 View Site
               </Link>
               <PixelButton size="sm" variant="secondary" onClick={handleLogout}>
@@ -115,5 +102,17 @@ export default function AdminLayout({
       {/* Admin Content */}
       <main className="container mx-auto px-4 py-8">{children}</main>
     </div>
+  );
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AdminAuthProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AdminAuthProvider>
   );
 }
