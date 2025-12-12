@@ -1,10 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PixelButton } from "@/components/ui";
-import { ITCH_URL } from "@/lib/constants";
+import { ITCH_URL, isLocalEnvironment } from "@/lib/constants";
 
 export function Header() {
+  const [isLocal, setIsLocal] = useState(false);
+
+  useEffect(() => {
+    setIsLocal(isLocalEnvironment());
+  }, []);
   return (
     <header className="sticky top-0 z-40 bg-pixel-bg-primary/95 backdrop-blur border-b-2 border-pixel-text-muted">
       <div className="container mx-auto px-4 py-4">
@@ -39,12 +45,14 @@ export function Header() {
             >
               Newsletter
             </Link>
-            <Link
-              href="/admin"
-              className="font-pixel text-pixel-xs text-pixel-text-muted hover:text-pixel-accent-pink transition-colors uppercase"
-            >
-              Admin
-            </Link>
+            {isLocal && (
+              <Link
+                href="/admin"
+                className="font-pixel text-pixel-xs text-pixel-text-muted hover:text-pixel-accent-pink transition-colors uppercase"
+              >
+                Admin
+              </Link>
+            )}
           </nav>
 
           {/* CTA */}

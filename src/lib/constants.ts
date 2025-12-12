@@ -1,4 +1,25 @@
 // =============================================================================
+// ENVIRONMENT HELPERS
+// =============================================================================
+
+/**
+ * Check if running in local environment (client-side only)
+ * Returns false during SSR, true only when confirmed localhost
+ */
+export function isLocalEnvironment(): boolean {
+  if (typeof window === "undefined") return false;
+  const hostname = window.location.hostname;
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+/**
+ * Check if running in Vercel production (server-side)
+ */
+export function isVercelProduction(): boolean {
+  return !!process.env.VERCEL;
+}
+
+// =============================================================================
 // APP CONSTANTS
 // =============================================================================
 
