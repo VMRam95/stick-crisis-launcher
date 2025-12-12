@@ -9,6 +9,9 @@ import { formatDate } from "@/lib/utils";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { Changelog } from "@/types";
 
+// Force dynamic rendering to always fetch fresh data
+export const dynamic = "force-dynamic";
+
 interface ChangelogPageProps {
   searchParams: { page?: string };
 }
