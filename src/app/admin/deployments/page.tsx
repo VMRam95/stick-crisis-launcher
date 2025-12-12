@@ -11,7 +11,6 @@ import {
   useToast,
 } from "@/components/ui";
 import { formatDateTime, markdownToHtml } from "@/lib/utils";
-import { ITCH_URL } from "@/lib/constants";
 import type {
   Deployment,
   DeploymentPlatform,
@@ -37,11 +36,6 @@ interface DeploymentStats {
     windows: number;
   };
   recentDeployments: Deployment[];
-}
-
-function getChannelUrl(): string {
-  // itch.io doesn't have per-channel URLs, but we can link to the main download page
-  return ITCH_URL;
 }
 
 export default function AdminDeploymentsPage() {
@@ -657,34 +651,6 @@ export default function AdminDeploymentsPage() {
               </PixelButton>
             </div>
           )}
-        </PixelCard>
-      )}
-
-      {/* itch.io Channels */}
-      {stats?.latestChannels && stats.latestChannels.length > 0 && (
-        <PixelCard variant="outlined" className="mb-8">
-          <h3 className="font-pixel text-pixel-xs text-pixel-text-primary uppercase mb-4">
-            itch.io Channels
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {stats.latestChannels.map((channel) => (
-              <a
-                key={channel}
-                href={getChannelUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block hover:scale-105 transition-transform"
-                title={`View ${channel} on itch.io`}
-              >
-                <PixelBadge category="Feature">
-                  {channel}
-                </PixelBadge>
-              </a>
-            ))}
-          </div>
-          <p className="font-mono text-xs text-pixel-text-muted mt-3 italic">
-            Click on a channel to visit the download page on itch.io
-          </p>
         </PixelCard>
       )}
 
