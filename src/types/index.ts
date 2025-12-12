@@ -127,6 +127,9 @@ export interface BuildInfo {
   sizeFormatted: string;
   path?: string;
   uploadedAt?: string;
+  fileCount?: number;
+  appName?: string; // mac only
+  exeName?: string; // windows only
 }
 
 export interface Deployment {

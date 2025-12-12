@@ -19,7 +19,7 @@ interface DeploymentDetailPageProps {
   params: { id: string };
 }
 
-interface DeploymentWithChangelog extends Deployment {
+interface DeploymentWithChangelog extends Omit<Deployment, "changelog"> {
   changelog?: Changelog | null;
 }
 
@@ -159,11 +159,11 @@ export default async function DeploymentDetailPage({
               </div>
 
               {/* Channels */}
-              {deployment.channels && deployment.channels.length > 0 && (
+              {deployment.itch_channels && deployment.itch_channels.length > 0 && (
                 <div>
                   <p className="font-mono text-xs text-pixel-text-muted mb-1">Channels</p>
                   <div className="flex flex-wrap gap-2">
-                    {deployment.channels.map((channel) => (
+                    {deployment.itch_channels.map((channel) => (
                       <PixelBadge key={channel} category="Security">
                         {channel}
                       </PixelBadge>
