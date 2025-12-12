@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import {
-  PixelButton,
   PixelCard,
   PixelBadge,
   LoadingSpinner,
   ChangelogContent,
+  BackButton,
   useToast,
 } from "@/components/ui";
 import { formatDate } from "@/lib/utils";
@@ -68,11 +67,7 @@ export default function ChangelogDetailPage() {
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <div className="mb-8">
-          <Link href="/#changelog">
-            <PixelButton variant="secondary" size="sm">
-              ← Back to Changelog
-            </PixelButton>
-          </Link>
+          <BackButton fallbackHref="/#changelog" label="Back" size="sm" />
         </div>
 
         {/* Changelog Card */}
@@ -109,9 +104,7 @@ export default function ChangelogDetailPage() {
 
         {/* Back Button (Bottom) */}
         <div className="mt-8 text-center">
-          <Link href="/#changelog">
-            <PixelButton variant="secondary">← Back to Changelog</PixelButton>
-          </Link>
+          <BackButton fallbackHref="/#changelog" label="Back" />
         </div>
       </div>
     </div>
