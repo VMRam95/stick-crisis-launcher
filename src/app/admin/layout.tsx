@@ -81,6 +81,16 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 >
                   Subscribers
                 </Link>
+                <Link
+                  href="/admin/feedback"
+                  className={`font-pixel text-pixel-xs uppercase transition-colors ${
+                    pathname === "/admin/feedback"
+                      ? "text-pixel-accent-green"
+                      : "text-pixel-text-secondary hover:text-pixel-accent-green"
+                  }`}
+                >
+                  Feedback
+                </Link>
               </nav>
             </div>
 
