@@ -252,3 +252,42 @@ export interface DeploymentOutput {
   deployedVersion?: string;
   platforms?: DeploymentPlatform[];
 }
+
+// =============================================================================
+// FEEDBACK TYPES
+// =============================================================================
+
+export type FeedbackType = "bug" | "feature" | "crash" | "suggestion" | "question" | "other";
+export type FeedbackStatus = "new" | "reviewed" | "in_progress" | "resolved" | "closed";
+
+export interface DeviceMetadata {
+  platform?: string;
+  game_version?: string;
+  unity_version?: string;
+  screen_resolution?: string;
+  os?: string;
+  system_language?: string;
+}
+
+export interface Feedback {
+  id: string;
+  feedback_type: FeedbackType;
+  description: string;
+  status: FeedbackStatus;
+  device_metadata: DeviceMetadata | null;
+  submitted_at: string;
+  updated_at: string;
+}
+
+export interface UpdateFeedbackInput {
+  id: string;
+  status?: FeedbackStatus;
+}
+
+export interface FeedbackFilters {
+  feedback_type?: FeedbackType;
+  status?: FeedbackStatus;
+  platform?: string;
+  from?: string;
+  to?: string;
+}
