@@ -275,6 +275,7 @@ export interface Feedback {
   description: string;
   status: FeedbackStatus;
   device_metadata: DeviceMetadata | null;
+  game_logs: string | null;
   submitted_at: string;
   updated_at: string;
 }

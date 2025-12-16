@@ -459,6 +459,20 @@ export default function AdminFeedbackPage() {
               </div>
             </div>
 
+            {/* Game Logs (for bug reports) */}
+            {selectedFeedback.game_logs && (
+              <div>
+                <label className="block font-pixel text-pixel-xs text-pixel-text-secondary uppercase mb-2">
+                  Game Logs
+                </label>
+                <div className="bg-pixel-bg-primary border-2 border-pixel-accent-red/50 p-3">
+                  <pre className="font-mono text-xs text-pixel-text-primary whitespace-pre-wrap overflow-auto max-h-[300px] scrollbar-thin scrollbar-thumb-pixel-text-muted scrollbar-track-pixel-bg-primary">
+                    {selectedFeedback.game_logs}
+                  </pre>
+                </div>
+              </div>
+            )}
+
             {/* Timestamps */}
             <div className="text-sm font-mono text-pixel-text-muted space-y-1">
               <p>Submitted: {formatDateTime(selectedFeedback.submitted_at)}</p>
